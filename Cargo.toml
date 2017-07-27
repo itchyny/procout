@@ -1,0 +1,14 @@
+[package]
+name = "procout"
+version = "0.0.0"
+authors = ["itchyny <itchyny@hatena.ne.jp>"]
+description = "Peek write(2) of another process"
+repository = "https://github.com/itchyny/procout"
+readme = "README.md"
+license = "MIT"
+keywords = []
+categories = ["Command line utilities"]
+
+[dependencies]
+libc = "0.2.27"
+nix = "0.9.0"
