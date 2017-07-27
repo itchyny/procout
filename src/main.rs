@@ -1,6 +1,6 @@
 extern crate libc;
 extern crate nix;
-use nix::sys::ptrace::ptrace;
+use nix::sys::ptrace::{ptrace, ptrace_setoptions};
 use nix::sys::wait::waitpid;
 use nix::sys::wait::WaitStatus;
 
@@ -32,13 +32,15 @@ fn run() -> Result<(), String> {
 fn procout(pid: nix::unistd::Pid) -> Result<(), String> {
     ptrace(ptrace::PTRACE_ATTACH , pid, ptr::null_mut(), ptr::null_mut())
         .map_err(|e| format!("failed to ptrace attach {} ({})", pid, e))?;
+    ptrace_setoptions(pid, ptrace::PTRACE_O_TRACESYSGOOD)
+        .map_err(|e| format!("failed to ptrace setoptions {} ({})", pid, e))?;
     let mut regs: libc::user_regs_struct = unsafe { mem::zeroed() };
     let regs_ptr: *mut libc::user_regs_struct = &mut regs;
     loop {
         match waitpid(pid, None) {
             Err(_) |
             Ok(WaitStatus::Exited(_, _)) => break,
-            Ok(WaitStatus::Stopped(_, _)) => {
+            Ok(WaitStatus::PtraceSyscall(_)) => {
                 ptrace(ptrace::PTRACE_GETREGS, pid, ptr::null_mut(), regs_ptr as *mut libc::c_void)
                     .map_err(|e| format!("failed to ptrace getregs {} ({})", pid, e))?;
                 if regs.orig_rax == libc::SYS_write as u64 && regs.rax == (-libc::ENOSYS) as u64 {
