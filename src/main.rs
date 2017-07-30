@@ -36,6 +36,8 @@ fn procout(pid: nix::unistd::Pid) -> Result<(), String> {
         .map_err(|e| format!("failed to ptrace setoptions {} ({})", pid, e))?;
     let mut regs: libc::user_regs_struct = unsafe { mem::zeroed() };
     let regs_ptr: *mut libc::user_regs_struct = &mut regs;
+    let mut is_enter_stop: bool = false;
+    let mut prev_orig_rax: u64 = 0;
     loop {
         match waitpid(pid, None) {
             Err(_) |
@@ -43,7 +45,9 @@ fn procout(pid: nix::unistd::Pid) -> Result<(), String> {
             Ok(WaitStatus::PtraceSyscall(_)) => {
                 ptrace(ptrace::PTRACE_GETREGS, pid, ptr::null_mut(), regs_ptr as *mut libc::c_void)
                     .map_err(|e| format!("failed to ptrace getregs {} ({})", pid, e))?;
-                if regs.orig_rax == libc::SYS_write as u64 && regs.rax == (-libc::ENOSYS) as u64 {
+                is_enter_stop = if prev_orig_rax == regs.orig_rax { !is_enter_stop } else { true };
+                prev_orig_rax = regs.orig_rax;
+                if regs.orig_rax == libc::SYS_write as u64 && is_enter_stop {
                     output(peek_bytes(pid, regs.rsi, regs.rdx), regs.rdi)?;
                 }
             }
