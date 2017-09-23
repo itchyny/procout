@@ -30,18 +30,15 @@ fn run() -> Result<(), String> {
 }
 
 fn procout(pid: nix::unistd::Pid) -> Result<(), String> {
-    ptrace(ptrace::PTRACE_ATTACH , pid, ptr::null_mut(), ptr::null_mut())
-        .map_err(|e| format!("failed to ptrace attach {} ({})", pid, e))?;
-    ptrace_setoptions(pid, ptrace::PTRACE_O_TRACESYSGOOD)
-        .map_err(|e| format!("failed to ptrace setoptions {} ({})", pid, e))?;
+    ptrace(ptrace::PTRACE_ATTACH, pid, ptr::null_mut(), ptr::null_mut()).map_err(|e| format!("failed to ptrace attach {} ({})", pid, e))?;
+    ptrace_setoptions(pid, ptrace::PTRACE_O_TRACESYSGOOD).map_err(|e| format!("failed to ptrace setoptions {} ({})", pid, e))?;
     let mut regs: libc::user_regs_struct = unsafe { mem::zeroed() };
     let regs_ptr: *mut libc::user_regs_struct = &mut regs;
     let mut is_enter_stop: bool = false;
     let mut prev_orig_rax: u64 = 0;
     loop {
         match waitpid(pid, None) {
-            Err(_) |
-            Ok(WaitStatus::Exited(_, _)) => break,
+            Err(_) | Ok(WaitStatus::Exited(_, _)) => break,
             Ok(WaitStatus::PtraceSyscall(_)) => {
                 ptrace(ptrace::PTRACE_GETREGS, pid, ptr::null_mut(), regs_ptr as *mut libc::c_void)
                     .map_err(|e| format!("failed to ptrace getregs {} ({})", pid, e))?;
@@ -53,8 +50,7 @@ fn procout(pid: nix::unistd::Pid) -> Result<(), String> {
             }
             _ => {}
         }
-        ptrace(ptrace::PTRACE_SYSCALL, pid, ptr::null_mut(), ptr::null_mut())
-            .map_err(|e| format!("failed to ptrace syscall {} ({})", pid, e))?;
+        ptrace(ptrace::PTRACE_SYSCALL, pid, ptr::null_mut(), ptr::null_mut()).map_err(|e| format!("failed to ptrace syscall {} ({})", pid, e))?;
     }
     Ok(())
 }
