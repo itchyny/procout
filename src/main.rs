@@ -58,8 +58,12 @@ fn procout(pid: nix::unistd::Pid) -> Result<(), String> {
 fn peek_bytes(pid: nix::unistd::Pid, addr: u64, size: u64) -> Vec<u8> {
     let mut vec = (0..(size + 7) / 8)
         .filter_map(|i| {
-            ptrace(ptrace::PTRACE_PEEKDATA, pid, (addr + 8 * i) as *mut libc::c_void, ptr::null_mut())
-                .map(|l| unsafe { mem::transmute(l) })
+            ptrace(
+                ptrace::PTRACE_PEEKDATA,
+                pid,
+                (addr + 8 * i) as *mut libc::c_void,
+                ptr::null_mut(),
+            ).map(|l| unsafe { mem::transmute(l) })
                 .ok()
         })
         .collect::<Vec<[u8; 8]>>()
