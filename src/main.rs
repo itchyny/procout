@@ -16,7 +16,7 @@ fn main() {
     std::process::exit(match run() {
         Ok(_) => 0,
         Err(err) => {
-            eprintln!("[{}] {}", CMD_NAME, err);
+            eprintln!("{}: {}", CMD_NAME, err);
             1
         }
     });
